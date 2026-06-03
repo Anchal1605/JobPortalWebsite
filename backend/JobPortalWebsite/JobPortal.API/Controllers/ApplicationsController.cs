@@ -26,7 +26,7 @@ namespace JobPortal.API.Controllers
         [HttpPost]
         [RequestSizeLimit(5 * 1024 * 1024)]
         [Consumes("multipart/form-data")]
-        public async Task<IActionResult> ApplyForJob([FromForm] int jobId, [FromForm] IFormFile? resumeFile, [FromForm] string? resumeUrl)
+        public async Task<IActionResult> ApplyForJob([FromForm] ApplyRequest request)
         {
             try
             {
@@ -49,7 +49,7 @@ namespace JobPortal.API.Controllers
                         Data = null
                     });
                 }
-                if (jobId <= 0)
+                if (request.JobId <= 0)
                 {
                     return BadRequest(new ApiResponse<string>
                     {
@@ -60,9 +60,9 @@ namespace JobPortal.API.Controllers
                 }
 
                 string? resolvedResumeUrl = null;
-                if (resumeFile != null && resumeFile.Length > 0)
+                if (request.ResumeFile != null && request.ResumeFile.Length > 0)
                 {
-                    var validationError = _fileStorage.ValidateResume(resumeFile);
+                    var validationError = _fileStorage.ValidateResume(request.ResumeFile);
                     if (validationError != null)
                     {
                         return BadRequest(new ApiResponse<string>
@@ -73,11 +73,11 @@ namespace JobPortal.API.Controllers
                         });
                     }
 
-                    resolvedResumeUrl = await _fileStorage.SaveFileAsync(resumeFile, "resumes", $"user-{candidateUserId}");
+                    resolvedResumeUrl = await _fileStorage.SaveFileAsync(request.ResumeFile, "resumes", $"user-{candidateUserId}");
                 }
-                else if (!string.IsNullOrWhiteSpace(resumeUrl))
+                else if (!string.IsNullOrWhiteSpace(request.ResumeUrl))
                 {
-                    resolvedResumeUrl = resumeUrl.Trim();
+                    resolvedResumeUrl = request.ResumeUrl.Trim();
                 }
 
                 if (string.IsNullOrEmpty(resolvedResumeUrl))
@@ -90,7 +90,7 @@ namespace JobPortal.API.Controllers
                     });
                 }
 
-                var alreadyApplied = await _context.Applications.AnyAsync(x => x.JobId == jobId && x.UserId == candidateUserId);
+                var alreadyApplied = await _context.Applications.AnyAsync(x => x.JobId == request.JobId && x.UserId == candidateUserId);
                 if (alreadyApplied)
                 {
                     return BadRequest(new ApiResponse<string>
@@ -102,7 +102,7 @@ namespace JobPortal.API.Controllers
                 }
                 var application = new Application
                 {
-                    JobId = jobId,
+                    JobId = request.JobId,
                     UserId = candidateUserId,
                     Status = "Applied",
                     ResumeUrl = resolvedResumeUrl

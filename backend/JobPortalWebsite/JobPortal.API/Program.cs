@@ -1,5 +1,6 @@
 using JobPortal.API.Data;
 using JobPortal.API.Middleware; //import the global exception middleware
+using JobPortal.API.Models;
 using JobPortal.API.Options;
 using JobPortal.API.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;  //adds jwt auth handler
@@ -69,15 +70,6 @@ namespace JobPortal.API
             });
 
             builder.Services.AddControllers();
-            builder.Services.AddCors(options =>
-            {
-                options.AddPolicy("AngularDev", builder =>
-                {
-                    builder.WithOrigins("http://localhost:4200")
-                    .AllowAnyHeader()
-                    .AllowAnyMethod();
-                });
-            });
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(c =>
@@ -110,6 +102,20 @@ namespace JobPortal.API
                 });
             });
             var app = builder.Build();
+
+            using (var scope = app.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                if (!db.Roles.Any())
+                {
+                    db.Roles.AddRange(
+                        new Role { Name = "Admin" },
+                        new Role { Name = "Recruiter" },
+                        new Role { Name = "Candidate" }
+                    );
+                    db.SaveChanges();
+                }
+            }
 
             var fileStorage = app.Services.GetRequiredService<FileStorageService>();
             fileStorage.EnsureUploadDirectoriesExist();
