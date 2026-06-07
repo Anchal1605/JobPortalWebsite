@@ -1,8 +1,7 @@
-namespace JobPortal.API.Models
+namespace JobPortal.API.Models;
+
+public class Role
 {
-    public class Role
-    {
-        public int Id { get; set; }
-        public string? Name { get; set; }   // Admin, Recruiter, Candidate
-    }
+    public int Id { get; set; }
+    public string? Name { get; set; }   // Admin, Recruiter, Candidate
 }

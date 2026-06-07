@@ -1,7 +1,6 @@
-namespace JobPortal.API.DTOs
+namespace JobPortal.API.DTOs;
+
+public class UploadFileResultDto
 {
-    public class UploadFileResultDto
-    {
-        public string Url { get; set; } = string.Empty;
-    }
+    public string Url { get; set; } = string.Empty;
 }

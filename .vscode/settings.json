@@ -1,0 +1,12 @@
+{
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": true,
+  "[csharp]": {
+    "editor.defaultFormatter": "JetBrains.resharper-code",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 4
+  },
+  "dotnet.defaultSolution": "backend/JobPortalWebsite/JobPortalWebsite.sln",
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true
+}

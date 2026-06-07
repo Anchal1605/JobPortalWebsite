@@ -1,7 +1,6 @@
-namespace JobPortal.API.DTOs
+namespace JobPortal.API.DTOs;
+
+public class UpdateApplicationStatusRequest
 {
-    public class UpdateApplicationStatusRequest
-    {
-        public string Status { get; set; } = string.Empty;
-    }
+    public string Status { get; set; } = string.Empty;
 }

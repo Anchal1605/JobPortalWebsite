@@ -1,127 +1,137 @@
 using JobPortal.API.Options;
 using Microsoft.Extensions.Options;
 
-namespace JobPortal.API.Services
+namespace JobPortal.API.Services;
+
+public class FileStorageService
 {
-    public class FileStorageService
+    private readonly IWebHostEnvironment _environment;
+    private readonly FileStorageOptions _options;
+
+    public FileStorageService(IWebHostEnvironment environment, IOptions<FileStorageOptions> options)
     {
-        private readonly IWebHostEnvironment _environment;
-        private readonly FileStorageOptions _options;
+        _environment = environment;
+        _options = options.Value;
+    }
 
-        public FileStorageService(IWebHostEnvironment environment, IOptions<FileStorageOptions> options)
+    public void EnsureUploadDirectoriesExist()
+    {
+        EnsureDirectory("uploads/avatars");
+        EnsureDirectory("uploads/logos");
+        EnsureDirectory("uploads/resumes");
+    }
+
+    public string? ValidateImage(IFormFile? file)
+    {
+        if (file == null || file.Length == 0)
         {
-            _environment = environment;
-            _options = options.Value;
+            return "No file was uploaded";
         }
 
-        public void EnsureUploadDirectoriesExist()
+        if (file.Length > _options.MaxImageBytes)
         {
-            EnsureDirectory("uploads/avatars");
-            EnsureDirectory("uploads/logos");
-            EnsureDirectory("uploads/resumes");
+            var maxMb = _options.MaxImageBytes / (1024 * 1024);
+            return $"Image must be {maxMb} MB or smaller";
         }
 
-        public string? ValidateImage(IFormFile? file)
+        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+        if (!_options.AllowedImageExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
         {
-            if (file == null || file.Length == 0)
-            {
-                return "No file was uploaded";
-            }
+            return "Only JPG, PNG, and WEBP images are allowed";
+        }
 
-            if (file.Length > _options.MaxImageBytes)
-            {
-                var maxMb = _options.MaxImageBytes / (1024 * 1024);
-                return $"Image must be {maxMb} MB or smaller";
-            }
+        if (!string.IsNullOrEmpty(file.ContentType) && !file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+        {
+            return "File must be an image";
+        }
 
-            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-            if (!_options.AllowedImageExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
-            {
-                return "Only JPG, PNG, and WEBP images are allowed";
-            }
+        return null;
+    }
 
-            if (!string.IsNullOrEmpty(file.ContentType) && !file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
-            {
-                return "File must be an image";
-            }
+    public string? ValidateResume(IFormFile? file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return "No file was uploaded";
+        }
 
+        if (file.Length > _options.MaxResumeBytes)
+        {
+            var maxMb = _options.MaxResumeBytes / (1024 * 1024);
+            return $"Résumé must be {maxMb} MB or smaller";
+        }
+
+        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+        if (!_options.AllowedResumeExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
+        {
+            return "Only PDF résumés are allowed";
+        }
+
+        if (!string.IsNullOrEmpty(file.ContentType)
+            && !file.ContentType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase))
+        {
+            return "File must be a PDF";
+        }
+
+        return null;
+    }
+
+    public async Task<string> SaveImageAsync(IFormFile file, string subfolder, string fileNamePrefix)
+    {
+        return await SaveFileAsync(file, subfolder, fileNamePrefix);
+    }
+
+    public async Task<string> SaveFileAsync(IFormFile file, string subfolder, string fileNamePrefix)
+    {
+        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+        var safeName = $"{fileNamePrefix}-{Guid.NewGuid():N}{extension}";
+        var relativePath = Path.Combine("uploads", subfolder, safeName).Replace('\\', '/');
+        var physicalDir = Path.Combine(_environment.WebRootPath, "uploads", subfolder);
+        Directory.CreateDirectory(physicalDir);
+
+        var physicalPath = Path.Combine(physicalDir, safeName);
+        await using var stream = new FileStream(physicalPath, FileMode.Create);
+        await file.CopyToAsync(stream);
+
+        var baseUrl = _options.PublicBaseUrl.TrimEnd('/');
+        return $"{baseUrl}/{relativePath}";
+    }
+
+
+    public string? TryGetLocalPhysicalPath(string? publicUrl)
+    {
+        if (string.IsNullOrWhiteSpace(publicUrl))
+        {
             return null;
         }
 
-        public string? ValidateResume(IFormFile? file)
+        var baseUrl = _options.PublicBaseUrl.TrimEnd('/');
+
+        if (!publicUrl.StartsWith(baseUrl, StringComparison.OrdinalIgnoreCase))
         {
-            if (file == null || file.Length == 0)
-            {
-                return "No file was uploaded";
-            }
-
-            if (file.Length > _options.MaxResumeBytes)
-            {
-                var maxMb = _options.MaxResumeBytes / (1024 * 1024);
-                return $"Résumé must be {maxMb} MB or smaller";
-            }
-
-            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-            if (!_options.AllowedResumeExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
-            {
-                return "Only PDF résumés are allowed";
-            }
-
-            if (!string.IsNullOrEmpty(file.ContentType)
-                && !file.ContentType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase))
-            {
-                return "File must be a PDF";
-            }
-
             return null;
         }
 
-        public async Task<string> SaveImageAsync(IFormFile file, string subfolder, string fileNamePrefix)
+        var relative = publicUrl[baseUrl.Length..].TrimStart('/');
+        var physicalPath = Path.Combine(
+            _environment.WebRootPath,
+            relative.Replace('/', Path.DirectorySeparatorChar));
+
+        return File.Exists(physicalPath) ? physicalPath : null;
+    }
+
+    public void TryDeleteUploadedFile(string? publicUrl)
+    {
+        var physicalPath = TryGetLocalPhysicalPath(publicUrl);
+        if (physicalPath != null)
         {
-            return await SaveFileAsync(file, subfolder, fileNamePrefix);
+            File.Delete(physicalPath);
         }
+    }
 
-        public async Task<string> SaveFileAsync(IFormFile file, string subfolder, string fileNamePrefix)
-        {
-            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-            var safeName = $"{fileNamePrefix}-{Guid.NewGuid():N}{extension}";
-            var relativePath = Path.Combine("uploads", subfolder, safeName).Replace('\\', '/');
-            var physicalDir = Path.Combine(_environment.WebRootPath, "uploads", subfolder);
-            Directory.CreateDirectory(physicalDir);
-
-            var physicalPath = Path.Combine(physicalDir, safeName);
-            await using var stream = new FileStream(physicalPath, FileMode.Create);
-            await file.CopyToAsync(stream);
-
-            var baseUrl = _options.PublicBaseUrl.TrimEnd('/');
-            return $"{baseUrl}/{relativePath}";
-        }
-
-        public void TryDeleteUploadedFile(string? publicUrl)
-        {
-            if (string.IsNullOrWhiteSpace(publicUrl))
-            {
-                return;
-            }
-
-            var baseUrl = _options.PublicBaseUrl.TrimEnd('/');
-            if (!publicUrl.StartsWith(baseUrl, StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
-
-            var relative = publicUrl.Substring(baseUrl.Length).TrimStart('/');
-            var physicalPath = Path.Combine(_environment.WebRootPath, relative.Replace('/', Path.DirectorySeparatorChar));
-            if (File.Exists(physicalPath))
-            {
-                File.Delete(physicalPath);
-            }
-        }
-
-        private void EnsureDirectory(string relativePath)
-        {
-            var path = Path.Combine(_environment.WebRootPath, relativePath.Replace('/', Path.DirectorySeparatorChar));
-            Directory.CreateDirectory(path);
-        }
+    private void EnsureDirectory(string relativePath)
+    {
+        var path = Path.Combine(_environment.WebRootPath, relativePath.Replace('/', Path.DirectorySeparatorChar));
+        Directory.CreateDirectory(path);
     }
 }

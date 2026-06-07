@@ -1,34 +1,34 @@
-﻿using JobPortal.API.Data;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using JobPortal.API.Data;
 using JobPortal.API.DTOs;
 using JobPortal.API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 
-namespace JobPortal.API.Controllers
+namespace JobPortal.API.Controllers;
+
+
+[ApiController]
+[Route("api/[controller]")]
+
+public class AuthController : ControllerBase
 {
-
-    [ApiController]
-    [Route("api/[controller]")]
-
-    public class AuthController : ControllerBase
+    private readonly AppDbContext _context;
+    private readonly IConfiguration _configuration;
+    public AuthController(AppDbContext context, IConfiguration configuration)
     {
-        private readonly AppDbContext _context;
-        private readonly IConfiguration _configuration;
-        public AuthController(AppDbContext context, IConfiguration configuration)
-        {
-            _context = context;
-            _configuration = configuration;
-        }
+        _context = context;
+        _configuration = configuration;
+    }
 
-        [HttpPost("register")]
-        public async Task<IActionResult> Register(User user)
+    [HttpPost("register")]
+    public async Task<IActionResult> Register(User user)
+    {
+        try
         {
-            try
-            {
             if (string.IsNullOrEmpty(user.Name) || string.IsNullOrEmpty(user.Email) || string.IsNullOrEmpty(user.Password) || user.RoleId <= 0)
             {
                 return BadRequest(new ApiResponse<string>
@@ -48,8 +48,8 @@ namespace JobPortal.API.Controllers
                     Data = null
                 });
             }
-            var roleExists = _context.Roles.Any(x=>x.Id == user.RoleId);
-            if(!roleExists)
+            var roleExists = _context.Roles.Any(x => x.Id == user.RoleId);
+            if (!roleExists)
             {
                 return BadRequest(new ApiResponse<string>
                 {
@@ -100,184 +100,183 @@ namespace JobPortal.API.Controllers
                 Message = "User registered successfully",
                 Data = user.Id.ToString()
             });
-            }
-            catch (Exception ex)
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse<string>
             {
-                return BadRequest(new ApiResponse<string>
-                {
-                    Success = false,
-                    Message = "Something went wrong while registering user",
-                    Data = null
-                });
-            }
+                Success = false,
+                Message = "Something went wrong while registering user",
+                Data = null
+            });
+        }
+    }
+
+    [HttpPost("login")]
+    public IActionResult Login(User loginUser)
+    {
+        if (string.IsNullOrEmpty(loginUser.Email) || string.IsNullOrEmpty(loginUser.Password))
+        {
+            return BadRequest(new ApiResponse<string>
+            {
+                Success = false,
+                Message = "Email and Password are required",
+                Data = null
+            });
         }
 
-        [HttpPost("login")]
-        public IActionResult Login(User loginUser)
+        var user = _context.Users.FirstOrDefault(u => u.Email.ToLower() == loginUser.Email.ToLower());
+        if (user == null || !BCrypt.Net.BCrypt.Verify(loginUser.Password, user.Password))
         {
-            if (string.IsNullOrEmpty(loginUser.Email) || string.IsNullOrEmpty(loginUser.Password))
+            return Unauthorized(new ApiResponse<string>
+            {
+                Success = false,
+                Message = "Invalid email or password",
+                Data = null
+            });
+        }
+
+        var token = GenerateToken(user);
+        return Ok(new ApiResponse<string>
+        {
+            Success = true,
+            Message = "Login successful",
+            Data = token
+        });
+    }
+    [Authorize]
+    [HttpPost("change-password")]
+    public async Task<IActionResult> ChangePassword(ChangePasswordRequest request)
+    {
+        try
+        {
+            if (request == null
+                || string.IsNullOrWhiteSpace(request.CurrentPassword)
+                || string.IsNullOrWhiteSpace(request.NewPassword))
             {
                 return BadRequest(new ApiResponse<string>
                 {
                     Success = false,
-                    Message = "Email and Password are required",
+                    Message = "Current password and new password are required",
                     Data = null
                 });
             }
 
-            var user = _context.Users.FirstOrDefault(u => u.Email.ToLower() == loginUser.Email.ToLower());
-            if (user == null || !BCrypt.Net.BCrypt.Verify(loginUser.Password, user.Password))
+            if (request.NewPassword.Length < 6)
+            {
+                return BadRequest(new ApiResponse<string>
+                {
+                    Success = false,
+                    Message = "New password must be at least 6 characters",
+                    Data = null
+                });
+            }
+
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
             {
                 return Unauthorized(new ApiResponse<string>
                 {
                     Success = false,
-                    Message = "Invalid email or password",
+                    Message = "Unauthorized access",
                     Data = null
                 });
             }
 
-            var token = GenerateToken(user);
-            return Ok(new ApiResponse<string>
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null || string.IsNullOrEmpty(user.Password))
             {
-                Success = true,
-                Message = "Login successful",
-                Data = token
-            });
-        }
-        [Authorize]
-        [HttpPost("change-password")]
-        public async Task<IActionResult> ChangePassword(ChangePasswordRequest request)
-        {
-            try
-            {
-                if (request == null
-                    || string.IsNullOrWhiteSpace(request.CurrentPassword)
-                    || string.IsNullOrWhiteSpace(request.NewPassword))
-                {
-                    return BadRequest(new ApiResponse<string>
-                    {
-                        Success = false,
-                        Message = "Current password and new password are required",
-                        Data = null
-                    });
-                }
-
-                if (request.NewPassword.Length < 6)
-                {
-                    return BadRequest(new ApiResponse<string>
-                    {
-                        Success = false,
-                        Message = "New password must be at least 6 characters",
-                        Data = null
-                    });
-                }
-
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
-                {
-                    return Unauthorized(new ApiResponse<string>
-                    {
-                        Success = false,
-                        Message = "Unauthorized access",
-                        Data = null
-                    });
-                }
-
-                var user = await _context.Users.FindAsync(userId);
-                if (user == null || string.IsNullOrEmpty(user.Password))
-                {
-                    return Unauthorized(new ApiResponse<string>
-                    {
-                        Success = false,
-                        Message = "User not found",
-                        Data = null
-                    });
-                }
-
-                if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.Password))
-                {
-                    return BadRequest(new ApiResponse<string>
-                    {
-                        Success = false,
-                        Message = "Current password is incorrect",
-                        Data = null
-                    });
-                }
-
-                user.Password = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
-                await _context.SaveChangesAsync();
-
-                return Ok(new ApiResponse<string>
-                {
-                    Success = true,
-                    Message = "Password updated successfully",
-                    Data = null
-                });
-            }
-            catch
-            {
-                return StatusCode(500, new ApiResponse<string>
+                return Unauthorized(new ApiResponse<string>
                 {
                     Success = false,
-                    Message = "Something went wrong while changing password",
+                    Message = "User not found",
                     Data = null
                 });
             }
-        }
 
-        [Authorize]
-        [HttpGet("me")]
-        public IActionResult Me()
-        {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var email = User.FindFirst(ClaimTypes.Email)?.Value;
-            var role = User.FindFirst(ClaimTypes.Role)?.Value;
-
-            return Ok(new ApiResponse<object>
+            if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.Password))
             {
-                Success = true,
-                Message = "Token is valid",
-                Data = new { userId, email, role }
-            });
-        }
-        [Authorize(Roles = "2")]
-        [HttpGet("employer-only")]
-        public IActionResult EmployerOnly()
-        {
+                return BadRequest(new ApiResponse<string>
+                {
+                    Success = false,
+                    Message = "Current password is incorrect",
+                    Data = null
+                });
+            }
+
+            user.Password = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+            await _context.SaveChangesAsync();
+
             return Ok(new ApiResponse<string>
             {
                 Success = true,
-                Message = "Welcome Employer",
-                Data = "You can access employer features."
+                Message = "Password updated successfully",
+                Data = null
             });
         }
-        private string GenerateToken(User user)
+        catch
         {
-            //gets jwt settings from appsettings.json
-            var jwtSettings = _configuration.GetSection("Jwt");
-            //convert secret key to bytes
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]));
-            //tells how to sign token - hmacSha256 algorithm
-            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-            //created claim - mini user info
-            var claims = new[]
+            return StatusCode(500, new ApiResponse<string>
             {
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Name, user.Name ?? string.Empty),
-                new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
-                new Claim(ClaimTypes.Role, user.RoleId.ToString())
-            };
-
-            //actual jwt object
-            var token = new JwtSecurityToken(
-                issuer: jwtSettings["Issuer"],  //JobPortalAPI
-                audience: jwtSettings["Audience"], //JobPortalClient
-                claims: claims, //user info
-                expires: DateTime.UtcNow.AddMinutes(int.Parse(jwtSettings["ExpiryMinutes"])), //60 minutes
-                signingCredentials: credentials //signature key/algorithm
-            );
-            return new JwtSecurityTokenHandler().WriteToken(token);
+                Success = false,
+                Message = "Something went wrong while changing password",
+                Data = null
+            });
         }
+    }
+
+    [Authorize]
+    [HttpGet("me")]
+    public IActionResult Me()
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var email = User.FindFirst(ClaimTypes.Email)?.Value;
+        var role = User.FindFirst(ClaimTypes.Role)?.Value;
+
+        return Ok(new ApiResponse<object>
+        {
+            Success = true,
+            Message = "Token is valid",
+            Data = new { userId, email, role }
+        });
+    }
+    [Authorize(Roles = "2")]
+    [HttpGet("employer-only")]
+    public IActionResult EmployerOnly()
+    {
+        return Ok(new ApiResponse<string>
+        {
+            Success = true,
+            Message = "Welcome Employer",
+            Data = "You can access employer features."
+        });
+    }
+    private string GenerateToken(User user)
+    {
+        //gets jwt settings from appsettings.json
+        var jwtSettings = _configuration.GetSection("Jwt");
+        //convert secret key to bytes
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]));
+        //tells how to sign token - hmacSha256 algorithm
+        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        //created claim - mini user info
+        var claims = new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(ClaimTypes.Name, user.Name ?? string.Empty),
+            new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
+            new Claim(ClaimTypes.Role, user.RoleId.ToString())
+        };
+
+        //actual jwt object
+        var token = new JwtSecurityToken(
+            issuer: jwtSettings["Issuer"],  //JobPortalAPI
+            audience: jwtSettings["Audience"], //JobPortalClient
+            claims: claims, //user info
+            expires: DateTime.UtcNow.AddMinutes(int.Parse(jwtSettings["ExpiryMinutes"])), //60 minutes
+            signingCredentials: credentials //signature key/algorithm
+        );
+        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }
 
