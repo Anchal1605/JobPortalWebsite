@@ -1,0 +1,27 @@
+<section class="hero">
+  <div class="hero-top">
+    <div class="hero-copy">
+      <h1 class="page-title">{{ title }}</h1>
+      <p class="page-subtitle">
+        Browse open roles from companies hiring now.
+        <span class="roles-count">{{ jobsCount }} {{ jobsCount === 1 ? 'position' : 'positions' }} available</span>
+      </p>
+    </div>
+    <button type="button" class="refresh-btn" [disabled]="jobsLoading" (click)="refresh.emit()">
+      {{ jobsLoading ? 'Refreshing…' : 'Refresh listings' }}
+    </button>
+  </div>
+  <div class="search-wrap">
+    <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
+      <path d="M20 20l-3-3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <input
+      class="search-input"
+      type="search"
+      placeholder="Search by title, company, or location…"
+      [value]="searchText"
+      (input)="onSearchInput(($any($event.target)).value)"
+    />
+  </div>
+</section>

@@ -1,0 +1,44 @@
+<main class="my-jobs-page">
+  <header class="my-jobs-header">
+    <h2 class="my-jobs-title">My job listings</h2>
+    <p class="my-jobs-lead">Manage your postings — edit details, review applicants, or remove a listing.</p>
+    <a routerLink="/recruiter/jobs/create" class="my-jobs-create">+ Post a job</a>
+  </header>
+
+  @if (message()) {
+  <p class="my-jobs-msg" role="status">{{ message() }}</p>
+  }
+
+  @if (loading()) {
+  <p class="my-jobs-msg">Loading…</p>
+  }
+
+  @if (!loading() && jobs().length > 0) {
+  <ul class="my-jobs-list">
+    @for (job of jobs(); track job.id) {
+    <li class="my-jobs-card">
+      <div class="my-jobs-card-main">
+        <h3 class="my-jobs-job-title">{{ job.title ?? 'Untitled role' }}</h3>
+        <p class="my-jobs-meta">{{ job.company ?? 'Company' }} · {{ job.location ?? '—' }}</p>
+      </div>
+      <div class="my-jobs-actions">
+        <a class="my-jobs-btn my-jobs-btn--muted" [routerLink]="['/recruiter/jobs', job.id, 'applicants']">
+          Applicants
+        </a>
+        <button type="button" class="my-jobs-btn my-jobs-btn--muted" (click)="editJob(job.id)">
+          Edit
+        </button>
+        <button type="button" class="my-jobs-btn my-jobs-btn--danger" [disabled]="deletingJobId() === job.id"
+          (click)="deleteJob(job)">
+          {{ deletingJobId() === job.id ? 'Deleting…' : 'Delete' }}
+        </button>
+      </div>
+    </li>
+    }
+  </ul>
+  }
+
+  @if (!loading() && jobs().length === 0 && !message()) {
+  <p class="my-jobs-empty">No job listings yet. <a routerLink="/recruiter/jobs/create">Post your first job</a>.</p>
+  }
+</main>

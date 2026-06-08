@@ -1,0 +1,38 @@
+@if (jobsLoading) {
+<section class="state-card state-loading">
+  <p>Loading open positions…</p>
+</section>
+} @else if (jobsError; as err) {
+<section class="state-card state-error">
+  <p role="alert">{{ err }}</p>
+  <button type="button" class="btn btn--secondary retry-btn" [disabled]="jobsLoading" (click)="retry.emit()">
+    {{ jobsLoading ? 'Retrying…' : 'Try again' }}
+  </button>
+</section>
+} @else if (jobs.length === 0) {
+<section class="state-card state-empty">
+  <p>No jobs match your search. Try different keywords or clear the filter.</p>
+</section>
+} @else {
+<section class="jobs-list">
+  @for (job of jobs; track job.id) {
+  <article class="job-card">
+    <div class="job-card__main">
+      <div class="job-card__header">
+        <span class="job-card__badge">{{ job.type ?? 'Full-time' }}</span>
+        <span class="job-card__salary">{{ job.salary ?? 'Competitive pay' }}</span>
+      </div>
+      <h2 class="job-card__title">
+        <a [routerLink]="['/jobs', job.id]">{{ job.title ?? 'Untitled role' }}</a>
+      </h2>
+      <p class="job-card__company">{{ job.company ?? 'Confidential employer' }}</p>
+      <p class="job-card__location">{{ job.location ?? 'Remote' }}</p>
+      <p class="job-card__desc">{{ stripHtml(job.description) }}</p>
+    </div>
+    <div class="job-card__actions">
+      <a class="job-card__cta" [routerLink]="['/jobs', job.id]">View details</a>
+    </div>
+  </article>
+  }
+</section>
+}

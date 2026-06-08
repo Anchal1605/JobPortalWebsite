@@ -1,0 +1,48 @@
+<main class="my-apps-page">
+  <header class="my-apps-header">
+    <a routerLink="/" class="my-apps-back">&larr; Back to jobs</a>
+    <h1>My applications</h1>
+    <p class="my-apps-lead">Track every role you've applied to and check your application status.</p>
+  </header>
+
+  @if (message()) {
+  <p class="my-apps-msg" role="status">{{ message() }}</p>
+  }
+
+  @if (loading()) {
+  <p class="my-apps-msg">Loading…</p>
+  }
+
+  @if (!loading() && rows().length > 0) {
+  <ul class="my-apps-list">
+    @for (a of rows(); track a.id) {
+    <li class="my-apps-card">
+      <h2 class="my-apps-title">
+        <a [routerLink]="['/jobs', a.jobId]">{{ a.jobTitle ?? 'Job #' + a.jobId }}</a>
+      </h2>
+      <p class="my-apps-meta">{{ a.company ?? 'Company' }} · {{ a.location ?? 'Location not listed' }}</p>
+      <div class="my-apps-row">
+        <span class="my-apps-label">Status</span>
+        <span [class]="applicationStatusBadgeClass(a.status)">
+          {{ a.status ?? 'Unknown' }}
+        </span>
+      </div>
+      <div class="my-apps-row">
+        <span class="my-apps-label">Résumé</span>
+        @if (a.resumeUrl) {
+        <a class="my-apps-resume-btn" [href]="a.resumeUrl" target="_blank" rel="noopener noreferrer">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+            <path d="M14 2v6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          View PDF
+        </a>
+        } @else {
+        <span class="my-apps-muted">Not provided</span>
+        }
+      </div>
+    </li>
+    }
+  </ul>
+  }
+</main>

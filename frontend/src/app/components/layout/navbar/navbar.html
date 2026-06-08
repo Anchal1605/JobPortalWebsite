@@ -1,0 +1,61 @@
+<header class="nav">
+  <div class="nav__inner">
+    <a routerLink="/" class="nav__brand" aria-label="CareerConnect home">
+      <span class="nav__logo" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+          <rect x="3" y="7" width="18" height="13" rx="2" stroke="currentColor" stroke-width="2"/>
+          <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M3 12h18" stroke="currentColor" stroke-width="2"/>
+        </svg>
+      </span>
+      <span class="nav__brand-text">CareerConnect</span>
+    </a>
+    <div class="nav__actions">
+      <a routerLink="/" routerLinkActive="nav__link--active" [routerLinkActiveOptions]="{ exact: true }" class="nav__link">Browse jobs</a>
+      @if (auth.loggedIn() && auth.sessionRoleId() === auth.candidateRoleId) {
+        <a
+          routerLink="/my-applications"
+          routerLinkActive="nav__link--active"
+          class="nav__link"
+        >
+          My applications
+        </a>
+      }
+      @if (auth.loggedIn() && auth.sessionRoleId() === auth.recruiterRoleId) {
+        <a
+          routerLink="/recruiter/jobs"
+          routerLinkActive="nav__link--active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          class="nav__link"
+        >
+          My listings
+        </a>
+        <a
+          routerLink="/recruiter/jobs/create"
+          routerLinkActive="nav__link--active"
+          class="nav__link nav__link--post"
+        >
+          Post a job
+        </a>
+      }
+      @if (auth.loggedIn()) {
+        <a
+          routerLink="/profile"
+          routerLinkActive="nav__link--active"
+          class="nav__link nav__link--profile"
+        >
+          Profile
+          @if (profileService.isProfileComplete() === false) {
+            <span class="nav__profile-dot" aria-label="Profile incomplete"></span>
+          }
+        </a>
+        <button type="button" class="nav__link nav__link--btn" (click)="logout($event)">
+          Log out
+        </button>
+      } @else {
+        <a routerLink="/auth/login" class="nav__link nav__link--login">Log in</a>
+        <a routerLink="/auth/signup" class="nav__btn">Sign up</a>
+      }
+    </div>
+  </div>
+</header>

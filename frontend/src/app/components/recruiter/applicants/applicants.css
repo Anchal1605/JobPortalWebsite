@@ -1,0 +1,136 @@
+.applicants-page {
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: 1.25rem 1.5rem 3rem;
+}
+
+.applicants-header {
+  margin-bottom: 1.5rem;
+  padding: 1.25rem 1.35rem;
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.applicants-header h1 {
+  margin: 0.5rem 0 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.applicants-lead {
+  margin: 0.35rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.applicants-back {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  padding: 0.35rem 0.65rem;
+  margin-left: -0.65rem;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.applicants-back:hover {
+  background: var(--surface-soft);
+  color: var(--text-strong);
+}
+
+.applicants-msg,
+.applicants-empty {
+  margin-top: 1rem;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.applicants-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.applicants-name {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.applicants-headline {
+  margin: 0 0 0.65rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.applicants-card {
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.15rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.applicants-card:hover {
+  border-color: var(--primary-muted);
+  box-shadow: var(--shadow-hover);
+}
+
+.applicants-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  font-size: 0.875rem;
+  margin-bottom: 0.35rem;
+}
+
+.applicants-row:last-child {
+  margin-bottom: 0;
+}
+
+.applicants-label {
+  color: var(--text-muted);
+  min-width: 5rem;
+}
+
+.applicants-value {
+  font-weight: 600;
+}
+
+.applicants-link {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.applicants-link:hover {
+  text-decoration: underline;
+}
+
+.applicants-muted {
+  color: var(--text-subtle);
+}
+
+.applicants-status-select {
+  min-width: 10rem;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text-strong);
+}
+
+.applicants-status-select:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}

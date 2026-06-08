@@ -1,0 +1,129 @@
+<main class="create-job-page">
+  <div class="create-job-layout">
+    <aside class="create-job-preview">
+      <div class="create-job-preview__card">
+        <h2 class="create-job-preview__title">Listing preview</h2>
+        <p class="create-job-preview__lead">How candidates will see this role on the job board.</p>
+
+        <article class="preview-job-card">
+          <div class="preview-job-card__header">
+            <span class="preview-job-card__badge">{{ model.type || 'Job type' }}</span>
+            <span class="preview-job-card__salary">{{ model.salary || 'Salary not set' }}</span>
+          </div>
+          <h3 class="preview-job-card__role">{{ model.title || 'Job title' }}</h3>
+          <p class="preview-job-card__company">{{ model.company || 'Company name' }}</p>
+          <p class="preview-job-card__location">{{ model.location || 'Location' }}</p>
+          <div class="preview-job-card__desc"
+            [innerHTML]="safeDescription(model.description) || 'Job description will appear here as you type.'"></div>
+        </article>
+
+        <ul class="create-job-tips">
+          <li>Use a clear title candidates would search for.</li>
+          <li>Include responsibilities, requirements, and benefits in the description.</li>
+          <li>Add location and salary to attract the right applicants.</li>
+        </ul>
+      </div>
+    </aside>
+
+    <div class="create-job-main">
+      <header class="create-job-toolbar">
+        <div class="create-job-toolbar__copy">
+          <a routerLink="/recruiter/jobs" class="create-job-back">&larr; Back to listings</a>
+          <h1 class="create-job-heading">{{ editJobId() == null ? 'Post a job' : 'Edit job listing' }}</h1>
+          <p class="create-job-lead">
+            {{
+            editJobId() == null
+            ? 'Fill in the details below to publish a new opening.'
+            : 'Update the fields below and save your changes.'
+            }}
+          </p>
+        </div>
+        <button type="submit" class="btn btn--primary create-job-toolbar__submit" form="createJobForm"
+          [disabled]="loading() || fetching() || (editJobId() != null && editPostedBy() == null)">
+          {{ loading() ? (editJobId() == null ? 'Publishing…' : 'Saving…') : (editJobId() == null ? 'Publish job' :
+          'Save changes') }}
+        </button>
+      </header>
+
+      @if (message()) {
+      <p class="create-job-message" role="status">{{ message() }}</p>
+      }
+      @if (fetching()) {
+      <p class="create-job-message" role="status">Loading job details…</p>
+      }
+
+      <form id="createJobForm" (ngSubmit)="submit()" #jobForm="ngForm" class="create-job-sections">
+        <section class="create-job-section">
+          <div class="create-job-section__head">
+            <h2>Role overview</h2>
+            <p>Core details about the position.</p>
+          </div>
+          <div class="create-job-section__body">
+            <div class="field">
+              <label for="job-title">Job title</label>
+              <input id="job-title" name="title" type="text" placeholder="e.g. Senior Frontend Developer"
+                [(ngModel)]="model.title" required />
+            </div>
+            <div class="field">
+              <label for="job-type">Employment type</label>
+              <select id="job-type" name="type" [(ngModel)]="model.type" required>
+                <option [ngValue]="null" disabled>Select type</option>
+                @for (type of jobTypes; track type) {
+                <option [ngValue]="type">{{ type }}</option>
+                }
+              </select>
+            </div>
+            <div class="field">
+              <label for="description">Job description</label>
+              <quill-editor [(ngModel)]="model.description" name="description" [styles]="{ minHeight: '280px' }"
+                [modules]="editorModules">
+              </quill-editor>
+            </div>
+          </div>
+        </section>
+
+        <section class="create-job-section">
+          <div class="create-job-section__head">
+            <h2>Company &amp; location</h2>
+            <p>Help candidates understand where they'll work.</p>
+          </div>
+          <div class="create-job-section__body create-job-section__body--grid">
+            <div class="field">
+              <label for="job-company">Company</label>
+              <input id="job-company" name="company" type="text" placeholder="e.g. Acme Corp"
+                [(ngModel)]="model.company" />
+            </div>
+            <div class="field">
+              <label for="job-location">Location</label>
+              <input id="job-location" name="location" type="text" placeholder="e.g. Bangalore · Remote"
+                [(ngModel)]="model.location" />
+            </div>
+          </div>
+        </section>
+
+        <section class="create-job-section">
+          <div class="create-job-section__head">
+            <h2>Compensation</h2>
+            <p>Salary range or pay details (optional but recommended).</p>
+          </div>
+          <div class="create-job-section__body">
+            <div class="field">
+              <label for="job-salary">Salary / pay range</label>
+              <input id="job-salary" name="salary" type="text" placeholder="e.g. ₹8–12 LPA or $90k–$110k"
+                [(ngModel)]="model.salary" />
+            </div>
+          </div>
+        </section>
+
+        <footer class="create-job-footer">
+          <a routerLink="/recruiter/jobs" class="btn btn--secondary">Cancel</a>
+          <button type="submit" class="btn btn--primary"
+            [disabled]="loading() || fetching() || !jobForm.valid || (editJobId() != null && editPostedBy() == null)">
+            {{ loading() ? (editJobId() == null ? 'Publishing…' : 'Saving…') : (editJobId() == null ? 'Publish job' :
+            'Save changes') }}
+          </button>
+        </footer>
+      </form>
+    </div>
+  </div>
+</main>

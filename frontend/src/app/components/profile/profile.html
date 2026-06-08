@@ -1,0 +1,417 @@
+<main class="profile-page">
+  @if (loading()) {
+  <p class="profile-msg profile-msg--center">Loading profile…</p>
+  } @else if (loadError()) {
+  <p class="profile-msg profile-msg--center">{{ loadError() }}</p>
+  } @else if (auth.sessionRoleId() === auth.candidateRoleId) {
+  <div class="profile-layout">
+    <aside class="profile-sidebar">
+      <div class="profile-sidebar__card">
+        <div class="profile-identity">
+          <input #avatarInput type="file" class="profile-file-hidden" accept="image/jpeg,image/png,image/webp"
+            (change)="onAvatarFileSelected($event)" />
+          <button type="button" class="profile-avatar-btn" (click)="openAvatarPicker()"
+            [attr.aria-label]="displayAvatarUrl() ? 'Change profile photo' : 'Upload profile photo'">
+            @if (displayAvatarUrl()) {
+            <img class="profile-avatar profile-avatar--large" [src]="displayAvatarUrl()!" alt="" />
+            } @else {
+            <span class="profile-avatar profile-avatar--large profile-avatar--placeholder" aria-hidden="true">
+              {{ (candidateForm().name || '?').charAt(0).toUpperCase() }}
+            </span>
+            }
+            <span class="profile-avatar-btn__overlay">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 16V4m0 0 4 4m-4-4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </span>
+          </button>
+          <p class="profile-avatar-hint">{{ displayAvatarUrl() ? 'Click photo to change' : 'Click to add photo' }}</p>
+          <h1 class="profile-identity__name">{{ candidateForm().name || 'Your name' }}</h1>
+          <p class="profile-identity__headline">
+            {{ candidateForm().headline || 'Add a headline to introduce yourself' }}
+          </p>
+        </div>
+
+        @if (skillTags().length > 0) {
+        <div class="profile-skills">
+          <h2 class="profile-skills__title">Skills</h2>
+          <ul class="profile-skills__list">
+            @for (skill of skillTags(); track skill) {
+            <li class="profile-skills__tag">{{ skill }}</li>
+            }
+          </ul>
+        </div>
+        }
+
+        <section class="profile-completion" [class.profile-completion--done]="isProfileComplete()">
+          <div class="profile-completion__bar">
+            <span class="profile-completion__fill" [style.width.%]="completionPercent()"></span>
+          </div>
+          <div class="profile-completion__text">
+            @if (isProfileComplete()) {
+            <strong>Profile complete</strong>
+            <span>You're all set.</span>
+            } @else {
+            <strong>{{ completionPercent() }}% complete</strong>
+            <span>{{ completionHint() }}</span>
+            }
+          </div>
+        </section>
+      </div>
+    </aside>
+
+    <div class="profile-main">
+      <header class="profile-main-toolbar">
+        <a routerLink="/" class="profile-back">&larr; Back</a>
+        <button type="submit" class="profile-btn profile-btn--primary" form="candidateProfileForm" [disabled]="saving()">
+          {{ saving() ? 'Saving…' : 'Save profile' }}
+        </button>
+      </header>
+
+      <form id="candidateProfileForm" class="profile-panels" (ngSubmit)="save()">
+        <section class="profile-panel">
+          <h2 class="profile-panel__title">Basic information</h2>
+          <div class="profile-info-grid profile-info-grid--stats">
+            <div class="profile-info-item">
+              <span class="profile-info-item__label">Email</span>
+              <span class="profile-info-item__value">{{ email() || '—' }}</span>
+            </div>
+            <div class="profile-info-item">
+              <span class="profile-info-item__label">Experience</span>
+              <span class="profile-info-item__value">{{ experienceLabel() }}</span>
+            </div>
+            <div class="profile-info-item">
+              <span class="profile-info-item__label">Location</span>
+              <span class="profile-info-item__value">{{ candidateForm().location || 'Not set' }}</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="profile-panel profile-panel--resume">
+          <div class="profile-panel__head-row">
+            <div>
+              <h2 class="profile-panel__title">Résumé</h2>
+              <p class="profile-panel__subtitle">Used when you apply to jobs and run AI fit analysis.</p>
+            </div>
+          </div>
+
+          <input #profileResumeInput type="file" class="profile-file-hidden" accept=".pdf,application/pdf"
+            (change)="onResumeFileSelected($event)" />
+
+          <div class="profile-resume-card"
+            [class.profile-resume-card--empty]="!hasResumePendingOrSaved()"
+            [class.profile-resume-card--pending]="!!selectedResumeFileName()">
+            <div class="profile-resume-card__icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z" stroke="currentColor"
+                  stroke-width="2" stroke-linejoin="round" />
+                <path d="M14 2v6h6M8 13h8M8 17h5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              </svg>
+            </div>
+            <div class="profile-resume-card__body">
+              @if (hasResumePendingOrSaved()) {
+              <p class="profile-resume-card__title">{{ resumeDisplayLabel() }}</p>
+              <p class="profile-resume-card__meta">
+                @if (selectedResumeFileName()) {
+                Uploading…
+                } @else {
+                PDF uploaded to your profile.
+                }
+              </p>
+              } @else {
+              <p class="profile-resume-card__title">No résumé yet</p>
+              <p class="profile-resume-card__meta">Upload a PDF (max 5 MB).</p>
+              }
+            </div>
+            @if (hasSavedResume() && !selectedResumeFileName()) {
+            <span class="profile-resume-card__check" aria-hidden="true">✓</span>
+            }
+          </div>
+
+          <div class="profile-resume-actions">
+            @if (hasSavedResume() && !selectedResumeFileName()) {
+            <button type="button" class="profile-btn profile-btn--primary" (click)="viewSavedResume()">
+              View PDF
+            </button>
+            }
+            <button type="button" class="profile-btn profile-btn--ghost" (click)="openResumePicker()">
+              {{ hasSavedResume() ? 'Replace PDF' : 'Upload PDF' }}
+            </button>
+          </div>
+        </section>
+
+        <section class="profile-accordion" [class.profile-accordion--open]="isExpanded('details')">
+          <button type="button" class="profile-accordion__header" (click)="toggleSection('details')">
+            <span>Profile details</span>
+            <svg class="profile-accordion__chevron" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </button>
+          @if (isExpanded('details')) {
+          <div class="profile-accordion__body">
+            <div class="field">
+              <label for="name">Full name</label>
+              <input id="name" name="name" type="text" [ngModel]="candidateForm().name"
+                (ngModelChange)="updateCandidateField('name', $event)" />
+            </div>
+            <div class="field">
+              <label for="headline">Headline</label>
+              <input id="headline" name="headline" type="text"
+                placeholder="e.g. Frontend developer open to remote roles" [ngModel]="candidateForm().headline"
+                (ngModelChange)="updateCandidateField('headline', $event)" />
+            </div>
+            <div class="field">
+              <label for="skills">Skills</label>
+              <textarea id="skills" name="skills" rows="3"
+                placeholder="Angular, TypeScript, UI design — separate with commas" [ngModel]="candidateForm().skills"
+                (ngModelChange)="updateCandidateField('skills', $event)"></textarea>
+            </div>
+            <div class="profile-field-grid">
+              <div class="field">
+                <label for="experience">Years of experience</label>
+                <input id="experience" name="experience" type="number" min="0"
+                  [ngModel]="candidateForm().experienceYears"
+                  (ngModelChange)="updateCandidateField('experienceYears', $event === '' || $event === null ? null : +$event)" />
+              </div>
+              <div class="field">
+                <label for="location">Location</label>
+                <input id="location" name="location" type="text" [ngModel]="candidateForm().location"
+                  (ngModelChange)="updateCandidateField('location', $event)" />
+              </div>
+            </div>
+          </div>
+          }
+        </section>
+      </form>
+
+      <section class="profile-accordion profile-accordion--standalone"
+        [class.profile-accordion--open]="isExpanded('security')">
+        <button type="button" class="profile-accordion__header" (click)="toggleSection('security')">
+          <span>Account security</span>
+          <svg class="profile-accordion__chevron" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </button>
+        @if (isExpanded('security')) {
+        <div class="profile-accordion__body">
+          <p class="profile-security-lead">Email: <strong>{{ email() }}</strong> (cannot be changed here)</p>
+          <form class="profile-security-form" (ngSubmit)="changePassword()">
+            <div class="field">
+              <label for="currentPassword">Current password</label>
+              <input id="currentPassword" name="currentPassword" type="password" autocomplete="current-password"
+                [ngModel]="currentPassword()" (ngModelChange)="currentPassword.set($event)" />
+            </div>
+            <div class="profile-field-grid">
+              <div class="field">
+                <label for="newPassword">New password</label>
+                <input id="newPassword" name="newPassword" type="password" autocomplete="new-password"
+                  [ngModel]="newPassword()" (ngModelChange)="newPassword.set($event)" />
+              </div>
+              <div class="field">
+                <label for="confirmPassword">Confirm new password</label>
+                <input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password"
+                  [ngModel]="confirmPassword()" (ngModelChange)="confirmPassword.set($event)" />
+              </div>
+            </div>
+            <button type="submit" class="profile-btn profile-btn--primary profile-btn--compact"
+              [disabled]="passwordSaving()">
+              {{ passwordSaving() ? 'Updating…' : 'Change password' }}
+            </button>
+          </form>
+        </div>
+        }
+      </section>
+    </div>
+  </div>
+  } @else if (auth.sessionRoleId() === auth.recruiterRoleId) {
+  <div class="profile-layout">
+    <aside class="profile-sidebar">
+      <div class="profile-sidebar__card">
+        <div class="profile-identity">
+          <input #logoInput type="file" class="profile-file-hidden" accept="image/jpeg,image/png,image/webp"
+            (change)="onLogoFileSelected($event)" />
+          <button type="button" class="profile-avatar-btn profile-avatar-btn--square" (click)="openLogoPicker()"
+            [attr.aria-label]="displayLogoUrl() ? 'Change company logo' : 'Upload company logo'">
+            @if (displayLogoUrl()) {
+            <img class="profile-avatar profile-avatar--large profile-avatar--square" [src]="displayLogoUrl()!" alt="" />
+            } @else {
+            <span class="profile-avatar profile-avatar--large profile-avatar--square profile-avatar--placeholder"
+              aria-hidden="true">
+              {{ (employerForm().companyName || '?').charAt(0).toUpperCase() }}
+            </span>
+            }
+            <span class="profile-avatar-btn__overlay">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 16V4m0 0 4 4m-4-4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </span>
+          </button>
+          <p class="profile-avatar-hint">{{ displayLogoUrl() ? 'Click logo to change' : 'Click to add logo' }}</p>
+          <h1 class="profile-identity__name">{{ employerForm().companyName || 'Your company' }}</h1>
+          <p class="profile-identity__headline">
+            {{ employerForm().designation || 'Add your job title' }}
+          </p>
+          @if (employerForm().companyDescription) {
+          <p class="profile-identity__bio">{{ employerForm().companyDescription }}</p>
+          }
+        </div>
+
+        <section class="profile-completion" [class.profile-completion--done]="isProfileComplete()">
+          <div class="profile-completion__bar">
+            <span class="profile-completion__fill" [style.width.%]="completionPercent()"></span>
+          </div>
+          <div class="profile-completion__text">
+            @if (isProfileComplete()) {
+            <strong>Profile complete</strong>
+            <span>You're all set.</span>
+            } @else {
+            <strong>{{ completionPercent() }}% complete</strong>
+            <span>{{ completionHint() }}</span>
+            }
+          </div>
+        </section>
+      </div>
+    </aside>
+
+    <div class="profile-main">
+      <header class="profile-main-toolbar">
+        <a routerLink="/" class="profile-back">&larr; Back</a>
+        <button type="submit" class="profile-btn profile-btn--primary" form="employerProfileForm" [disabled]="saving()">
+          {{ saving() ? 'Saving…' : 'Save profile' }}
+        </button>
+      </header>
+
+      <form id="employerProfileForm" class="profile-panels" (ngSubmit)="save()">
+        <section class="profile-panel">
+          <h2 class="profile-panel__title">Basic information</h2>
+          <div class="profile-info-grid">
+            <div class="profile-info-item">
+              <span class="profile-info-item__label">Your name</span>
+              <span class="profile-info-item__value">{{ employerForm().name || 'Not set' }}</span>
+            </div>
+            <div class="profile-info-item">
+              <span class="profile-info-item__label">Email</span>
+              <span class="profile-info-item__value">{{ email() || '—' }}</span>
+            </div>
+            <div class="profile-info-item">
+              <span class="profile-info-item__label">Contact</span>
+              <span class="profile-info-item__value">{{ employerForm().contactNumber || 'Not set' }}</span>
+            </div>
+            <div class="profile-info-item">
+              <span class="profile-info-item__label">Website</span>
+              @if (employerForm().companyWebsite) {
+              <a class="profile-info-item__link" [href]="employerForm().companyWebsite" target="_blank"
+                rel="noopener noreferrer">
+                Visit site
+              </a>
+              } @else {
+              <span class="profile-info-item__value">Not added</span>
+              }
+            </div>
+            <div class="profile-info-item">
+              <span class="profile-info-item__label">Location</span>
+              <span class="profile-info-item__value">{{ employerForm().companyLocation || 'Not set' }}</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="profile-accordion" [class.profile-accordion--open]="isExpanded('details')">
+          <button type="button" class="profile-accordion__header" (click)="toggleSection('details')">
+            <span>Company &amp; contact details</span>
+            <svg class="profile-accordion__chevron" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </button>
+          @if (isExpanded('details')) {
+          <div class="profile-accordion__body">
+            <div class="profile-field-grid">
+              <div class="field">
+                <label for="emp-name">Your name</label>
+                <input id="emp-name" name="empName" type="text" [ngModel]="employerForm().name"
+                  (ngModelChange)="updateEmployerField('name', $event)" />
+              </div>
+              <div class="field">
+                <label for="designation">Job title</label>
+                <input id="designation" name="designation" type="text" placeholder="e.g. HR Manager"
+                  [ngModel]="employerForm().designation" (ngModelChange)="updateEmployerField('designation', $event)" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="contact">Contact number</label>
+              <input id="contact" name="contact" type="tel" [ngModel]="employerForm().contactNumber"
+                (ngModelChange)="updateEmployerField('contactNumber', $event)" />
+            </div>
+            <div class="field">
+              <label for="companyName">Company name</label>
+              <input id="companyName" name="companyName" type="text" [ngModel]="employerForm().companyName"
+                (ngModelChange)="updateEmployerField('companyName', $event)" />
+            </div>
+            <div class="profile-field-grid">
+              <div class="field">
+                <label for="companyWebsite">Website</label>
+                <input id="companyWebsite" name="companyWebsite" type="url" [ngModel]="employerForm().companyWebsite"
+                  (ngModelChange)="updateEmployerField('companyWebsite', $event)" />
+              </div>
+              <div class="field">
+                <label for="companyLocation">Location</label>
+                <input id="companyLocation" name="companyLocation" type="text"
+                  [ngModel]="employerForm().companyLocation"
+                  (ngModelChange)="updateEmployerField('companyLocation', $event)" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="companyDescription">About the company</label>
+              <textarea id="companyDescription" name="companyDescription" rows="4"
+                [ngModel]="employerForm().companyDescription"
+                (ngModelChange)="updateEmployerField('companyDescription', $event)"></textarea>
+            </div>
+          </div>
+          }
+        </section>
+      </form>
+
+      <section class="profile-accordion profile-accordion--standalone"
+        [class.profile-accordion--open]="isExpanded('security')">
+        <button type="button" class="profile-accordion__header" (click)="toggleSection('security')">
+          <span>Account security</span>
+          <svg class="profile-accordion__chevron" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </button>
+        @if (isExpanded('security')) {
+        <div class="profile-accordion__body">
+          <p class="profile-security-lead">Email: <strong>{{ email() }}</strong> (cannot be changed here)</p>
+          <form class="profile-security-form" (ngSubmit)="changePassword()">
+            <div class="field">
+              <label for="emp-currentPassword">Current password</label>
+              <input id="emp-currentPassword" name="currentPassword" type="password" autocomplete="current-password"
+                [ngModel]="currentPassword()" (ngModelChange)="currentPassword.set($event)" />
+            </div>
+            <div class="profile-field-grid">
+              <div class="field">
+                <label for="emp-newPassword">New password</label>
+                <input id="emp-newPassword" name="newPassword" type="password" autocomplete="new-password"
+                  [ngModel]="newPassword()" (ngModelChange)="newPassword.set($event)" />
+              </div>
+              <div class="field">
+                <label for="emp-confirmPassword">Confirm new password</label>
+                <input id="emp-confirmPassword" name="confirmPassword" type="password" autocomplete="new-password"
+                  [ngModel]="confirmPassword()" (ngModelChange)="confirmPassword.set($event)" />
+              </div>
+            </div>
+            <button type="submit" class="profile-btn profile-btn--primary profile-btn--compact"
+              [disabled]="passwordSaving()">
+              {{ passwordSaving() ? 'Updating…' : 'Change password' }}
+            </button>
+          </form>
+        </div>
+        }
+      </section>
+    </div>
+  </div>
+  } @else {
+  <p class="profile-msg profile-msg--center">Profile is not available for your account type.</p>
+  }
+</main>

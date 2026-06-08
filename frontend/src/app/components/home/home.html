@@ -1,0 +1,7 @@
+<main class="page">
+    <app-jobs-header [title]="title()" [jobsCount]="jobs().length" [jobsLoading]="jobsLoading()"
+        [searchText]="searchText()" (refresh)="retryLoadJobs()" (searchChange)="onSearchChange($event)" />
+
+    <app-jobs-content [jobsLoading]="jobsLoading()" [jobsError]="jobsError()" [jobs]="jobs()"
+        (retry)="retryLoadJobs()" />
+</main>

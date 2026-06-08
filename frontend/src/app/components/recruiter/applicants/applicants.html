@@ -1,0 +1,47 @@
+<main class="applicants-page">
+    <header class="applicants-header">
+        <a routerLink="/recruiter/jobs" class="applicants-back">&larr; My jobs</a>
+        <h1>Applicants</h1>
+        <p class="applicants-lead">Applications for this posting.</p>
+    </header>
+
+    @if (message()) {
+    <p class="applicants-msg" role="status">{{ message() }}</p>
+    }
+
+    @if (loading()) {
+    <p class="applicants-msg">Loading…</p>
+    }
+
+    @if (!loading() && applicants().length > 0) {
+    <ul class="applicants-list">
+        @for (a of applicants(); track a.id) {
+        <li class="applicants-card">
+            <h2 class="applicants-name">{{ a.candidateName ?? ('Candidate #' + a.userId) }}</h2>
+            @if (a.headline) {
+            <p class="applicants-headline">{{ a.headline }}</p>
+            }
+            <div class="applicants-row">
+                <span class="applicants-label">Status</span>
+                <select class="applicants-status-select" [ngModel]="a.status ?? 'Applied'"
+                    (ngModelChange)="onStatusChange(a.id, $event)" [name]="'status-' + a.id"
+                    [disabled]="updatingId() === a.id">
+                    @for (s of statusOptions; track s) {
+                    <option [ngValue]="s">{{ s }}</option>
+                    }
+                </select>
+            </div>
+            <div class="applicants-row">
+                <span class="applicants-label">Resume</span>
+                @if (a.resumeUrl) {
+                <a class="applicants-link" [href]="a.resumeUrl" target="_blank" rel="noopener noreferrer">Open
+                    resume</a>
+                } @else {
+                <span class="applicants-muted">Not provided</span>
+                }
+            </div>
+        </li>
+        }
+    </ul>
+    }
+</main>

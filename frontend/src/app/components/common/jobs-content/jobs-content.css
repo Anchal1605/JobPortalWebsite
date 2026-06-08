@@ -1,0 +1,140 @@
+.retry-btn {
+  margin-top: 0.85rem;
+}
+
+.jobs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.job-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding: 1.15rem 1.25rem;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.job-card:hover {
+  border-color: var(--primary-muted);
+  box-shadow: var(--shadow-hover);
+}
+
+.job-card__main {
+  min-width: 0;
+  flex: 1;
+}
+
+.job-card__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.job-card__badge {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-md);
+  background: var(--primary-light);
+  border: 1px solid rgb(29 78 216 / 0.15);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.job-card__salary {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.job-card__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.job-card__title a {
+  color: var(--text-strong);
+  text-decoration: none;
+}
+
+.job-card__title a:hover {
+  color: var(--primary);
+}
+
+.job-card__company {
+  margin: 0.3rem 0 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.job-card__location {
+  margin: 0.15rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.job-card__desc {
+  margin: 0.55rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.job-card__actions {
+  flex-shrink: 0;
+  padding-top: 0.15rem;
+}
+
+.job-card__cta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.25rem;
+  padding: 0 0.95rem;
+  border-radius: var(--radius-md);
+  background: var(--primary);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.job-card__cta:hover {
+  background: var(--primary-hover);
+  box-shadow: var(--shadow-primary);
+}
+
+@media (max-width: 640px) {
+  .job-card {
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  .job-card__actions {
+    width: 100%;
+    padding-top: 0;
+  }
+
+  .job-card__cta {
+    width: 100%;
+    justify-content: center;
+  }
+}
