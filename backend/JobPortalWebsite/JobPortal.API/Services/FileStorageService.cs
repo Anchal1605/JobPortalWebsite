@@ -68,12 +68,24 @@ public class FileStorageService
         }
 
         if (!string.IsNullOrEmpty(file.ContentType)
-            && !file.ContentType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase))
+            && !IsAllowedResumeContentType(file.ContentType, extension))
         {
             return "File must be a PDF";
         }
 
         return null;
+    }
+
+    private static bool IsAllowedResumeContentType(string contentType, string extension)
+    {
+        if (contentType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        // Some browsers send octet-stream for PDFs — allow when extension is .pdf
+        return contentType.Equals("application/octet-stream", StringComparison.OrdinalIgnoreCase)
+            && extension.Equals(".pdf", StringComparison.OrdinalIgnoreCase);
     }
 
     public async Task<string> SaveImageAsync(IFormFile file, string subfolder, string fileNamePrefix)

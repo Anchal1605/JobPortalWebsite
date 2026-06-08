@@ -340,14 +340,14 @@ public class ProfilesController : ControllerBase
             profile.Headline = request.Headline?.Trim();
             profile.Skills = request.Skills?.Trim();
             profile.ExperienceYears = request.ExperienceYears;
-            if (!string.IsNullOrWhiteSpace(request.ResumeUrl))
+            if (request.ResumeUrl is not null && !string.IsNullOrWhiteSpace(request.ResumeUrl))
             {
                 profile.ResumeUrl = request.ResumeUrl.Trim();
             }
             profile.Location = request.Location?.Trim();
-            if (!string.IsNullOrWhiteSpace(request.AvatarUrl))
+            if (request.AvatarUrl is not null && !string.IsNullOrWhiteSpace(request.AvatarUrl))
             {
-                profile.AvatarUrl = request.AvatarUrl?.Trim();
+                profile.AvatarUrl = request.AvatarUrl.Trim();
             }
             profile.UpdatedAt = DateTime.UtcNow;
 
